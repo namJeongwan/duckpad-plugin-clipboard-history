@@ -22,3 +22,9 @@
 "End of history. Select an item to start again." = "End of history. Select an item to start again.";
 "Clipboard item preview" = "Clipboard item preview";
 "Preview" = "Preview";
+"Copy Image" = "Copy Image";
+"Copy Next" = "Copy Next";
+"Image %1$@ × %2$@" = "Image %1$@ × %2$@";
+"Image copied. Paste it into another app." = "Image copied. Paste it into another app.";
+"Clipboard image preview" = "Clipboard image preview";
+"Copy the selected image, then select the next item." = "Copy the selected image, then select the next item.";

@@ -22,3 +22,9 @@
 "End of history. Select an item to start again." = "Fine della cronologia. Seleziona un elemento per ricominciare.";
 "Clipboard item preview" = "Anteprima dell’elemento negli appunti";
 "Preview" = "Anteprima";
+"Copy Image" = "Copia immagine";
+"Copy Next" = "Copia e avanti";
+"Image %1$@ × %2$@" = "Immagine %1$@ × %2$@";
+"Image copied. Paste it into another app." = "Immagine copiata. Incollala in un’altra app.";
+"Clipboard image preview" = "Anteprima dell’immagine degli appunti";
+"Copy the selected image, then select the next item." = "Copia l’immagine selezionata, poi seleziona l’elemento successivo.";

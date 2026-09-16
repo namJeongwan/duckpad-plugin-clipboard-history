@@ -22,3 +22,9 @@
 "End of history. Select an item to start again." = "마지막 항목입니다. 다시 시작하려면 항목을 선택하세요.";
 "Clipboard item preview" = "클립보드 항목 미리보기";
 "Preview" = "미리보기";
+"Copy Image" = "이미지 복사";
+"Copy Next" = "다음 이미지 복사";
+"Image %1$@ × %2$@" = "이미지 %1$@ × %2$@";
+"Image copied. Paste it into another app." = "이미지를 복사했습니다. 다른 앱에 붙여넣으세요.";
+"Clipboard image preview" = "클립보드 이미지 미리보기";
+"Copy the selected image, then select the next item." = "선택한 이미지를 복사한 뒤 다음 항목을 선택합니다.";

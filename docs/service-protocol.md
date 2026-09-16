@@ -25,3 +25,35 @@ State v1 is migrated once, retaining text and pin state; since old records have 
 The native dock offers separate Paste and Paste Next buttons. Paste Next starts at the selected row in the current filtered, pinned-first list. After validated insertion it selects the next row, and stops at the end without wrapping. Choosing another row or changing the search resets that stopping point. Each insertion uses the active editor target captured for that request. Failed or cancelled insertion does not advance. Host clipboard writes from these actions do not reorder the history. Return remains normal Paste only when list/search has focus.
 
 The native preview displays the full selected text with original whitespace and line breaks. Preview requests coalesce when selection changes quickly, and the host checks presentation, row identity, and search query before displaying their results. Closing the dock clears preview content. Native table cells vertically center the label within the selection background.
+
+## Native image extension: protocol and state v3
+
+Native 0.3.2 sends request version 3 with the same request field layout. The new
+`capture-image` event receives `sha256:width:height:pngByteCount` as its payload;
+image bytes never enter the Rust state or wire message. Swift validates and
+normalizes bitmap/file-URL captures to PNG on the history actor first.
+
+Response v3 appends an image descriptor (empty for text) to every row. After the
+selected text and retention fields it appends the selected image descriptor,
+then a UInt32 live-image count and that many descriptors. The live reference set
+includes images excluded by search. Image selection returns no editor text.
+Versions 1/2 still receive v2 responses with image rows excluded.
+
+State v3 adds a UInt32 content-kind flag before each entry's text payload; image
+entries store descriptors there. Text-only states continue to encode v2, and
+existing full-size v2 histories remain intact when queried. State v1/v2 migration
+preserves unexpired text and pins. Older native releases cannot read v3 state.
+
+Swift stores full PNGs, bounded thumbnails, and optional source-path JSON beside
+one another in the private Images directory, keyed by image digest. File capture
+labels use the filename and expose the full path as a tooltip. Path matches are
+merged with Rust's full-text matches while retaining row order. The state is
+persisted before unreferenced image files and metadata are deleted.
+
+Image preview never changes the clipboard. Double-click, Return, Copy Image and
+Copy Next restore PNG data to the pasteboard, without sending image metadata to
+the document editor. A detached/hidden panel or replaced presentation cancels a
+pending copy. Source files may be moved/deleted after capture; history owns its
+snapshot. PNG normalization does not preserve original encoding or container
+metadata. Images are bounded to 32 MiB and 64 million pixels each, with a 256 MiB
+aggregate image budget; normal history count, retention and pin rules apply.

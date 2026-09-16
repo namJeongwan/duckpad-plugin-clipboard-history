@@ -22,3 +22,9 @@
 "End of history. Select an item to start again." = "Fin de l’historique. Sélectionnez un élément pour recommencer.";
 "Clipboard item preview" = "Aperçu de l’élément du presse-papiers";
 "Preview" = "Aperçu";
+"Copy Image" = "Copier l’image";
+"Copy Next" = "Copier et suivant";
+"Image %1$@ × %2$@" = "Image %1$@ × %2$@";
+"Image copied. Paste it into another app." = "Image copiée. Collez-la dans une autre app.";
+"Clipboard image preview" = "Aperçu de l’image du presse-papiers";
+"Copy the selected image, then select the next item." = "Copier l’image sélectionnée, puis sélectionner l’élément suivant.";

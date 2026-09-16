@@ -22,3 +22,9 @@
 "End of history. Select an item to start again." = "已到历史记录末尾。请选择一个条目以重新开始。";
 "Clipboard item preview" = "剪贴板条目预览";
 "Preview" = "预览";
+"Copy Image" = "复制图像";
+"Copy Next" = "复制并选择下一项";
+"Image %1$@ × %2$@" = "图像 %1$@ × %2$@";
+"Image copied. Paste it into another app." = "图像已复制。请粘贴到其他应用。";
+"Clipboard image preview" = "剪贴板图像预览";
+"Copy the selected image, then select the next item." = "复制所选图像，然后选择下一项。";
