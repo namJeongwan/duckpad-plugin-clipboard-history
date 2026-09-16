@@ -7,6 +7,9 @@ final class ClipboardPanel: NSView, NSTableViewDataSource, NSTableViewDelegate, 
     private let search = NSSearchField()
     private let table = ExtensionListTableView()
     private let preview = NSTextView()
+    private let imagePreview = ClipboardPreviewImageView()
+    private let previewScroll = NSScrollView()
+    private var thumbnails: [String: NSImage] = [:]
     private let previewHeading = NSTextField(labelWithString: "")
     private let retentionLabel = NSTextField(labelWithString: "")
     private var catalog = L10n.catalog
@@ -60,10 +63,25 @@ final class ClipboardPanel: NSView, NSTableViewDataSource, NSTableViewDelegate, 
         preview.textContainer?.widthTracksTextView = true
         preview.textContainer?.containerSize = NSSize(width: 300, height: CGFloat.greatestFiniteMagnitude)
         preview.setAccessibilityLabel(localized("Clipboard item preview"))
+        imagePreview.setAccessibilityLabel(localized("Clipboard image preview"))
         preview.setAccessibilityIdentifier("duckpad.plugin.list.preview")
-        let previewScroll = NSScrollView(); previewScroll.documentView = preview
+        previewScroll.documentView = preview
         previewScroll.hasVerticalScroller = true; previewScroll.borderType = .bezelBorder
-        let previewHeight = previewScroll.heightAnchor.constraint(equalTo: heightAnchor, multiplier: 0.25)
+        let previewContainer = NSView()
+        imagePreview.imageScaling = .scaleProportionallyDown
+        imagePreview.setAccessibilityIdentifier("duckpad.plugin.list.image-preview")
+        imagePreview.isHidden = true
+        for child in [previewScroll, imagePreview] {
+            child.translatesAutoresizingMaskIntoConstraints = false
+            previewContainer.addSubview(child)
+            NSLayoutConstraint.activate([
+                child.leadingAnchor.constraint(equalTo: previewContainer.leadingAnchor),
+                child.trailingAnchor.constraint(equalTo: previewContainer.trailingAnchor),
+                child.topAnchor.constraint(equalTo: previewContainer.topAnchor),
+                child.bottomAnchor.constraint(equalTo: previewContainer.bottomAnchor),
+            ])
+        }
+        let previewHeight = previewContainer.heightAnchor.constraint(equalTo: heightAnchor, multiplier: 0.25)
         previewHeight.priority = .defaultHigh
         let actions = [#selector(selectItem), #selector(selectNext), #selector(pinItem), #selector(deleteItem), #selector(clearItems)]
         let buttons = [pasteButton, nextButton, pinButton, deleteButton, clearButton]
@@ -82,7 +100,7 @@ final class ClipboardPanel: NSView, NSTableViewDataSource, NSTableViewDelegate, 
         nextButton.setAccessibilityIdentifier("duckpad.plugin.list.paste-next")
         pasteButton.setAccessibilityIdentifier("duckpad.plugin.list.paste")
         let settings = NSStackView(views: [retentionLabel, retention]); settings.spacing = 8
-        let stack = NSStackView(views: [header, search, scroll, previewHeading, previewScroll, status, actionBar, settings])
+        let stack = NSStackView(views: [header, search, scroll, previewHeading, previewContainer, status, actionBar, settings])
         stack.orientation = .vertical; stack.alignment = .leading; stack.spacing = 10
         stack.translatesAutoresizingMaskIntoConstraints = false
         addSubview(stack)
@@ -95,7 +113,7 @@ final class ClipboardPanel: NSView, NSTableViewDataSource, NSTableViewDelegate, 
             header.widthAnchor.constraint(equalTo: stack.widthAnchor),
             search.widthAnchor.constraint(equalTo: stack.widthAnchor),
             scroll.widthAnchor.constraint(equalTo: stack.widthAnchor),
-            previewScroll.widthAnchor.constraint(equalTo: stack.widthAnchor),
+            previewContainer.widthAnchor.constraint(equalTo: stack.widthAnchor),
             status.widthAnchor.constraint(equalTo: stack.widthAnchor),
             actionBar.widthAnchor.constraint(equalTo: stack.widthAnchor),
             widthAnchor.constraint(greaterThanOrEqualToConstant: 300),
@@ -106,7 +124,7 @@ final class ClipboardPanel: NSView, NSTableViewDataSource, NSTableViewDelegate, 
     @available(*, unavailable) required init?(coder: NSCoder) { nil }
     func prepareForDisplay() {
         refreshLocalization()
-        pastePending = false; sequenceEnded = false; previewID = nil; preview.string = ""; updateButtons(); updatePreview()
+        pastePending = false; sequenceEnded = false; previewID = nil; clearPreview(); updateButtons(); updatePreview()
     }
     func refreshLocalization(catalog: LocalizationCatalog = L10n.catalog) {
         self.catalog = catalog
@@ -115,6 +133,7 @@ final class ClipboardPanel: NSView, NSTableViewDataSource, NSTableViewDelegate, 
         search.placeholderString = localized("Search clipboard history")
         previewHeading.stringValue = localized("Preview")
         preview.setAccessibilityLabel(localized("Clipboard item preview"))
+        imagePreview.setAccessibilityLabel(localized("Clipboard image preview"))
         pasteButton.title = localized("Paste"); nextButton.title = localized("Paste Next")
         nextButton.toolTip = localized("Paste the selected item, then select the next item. Stops at the end of the list.")
         deleteButton.title = localized("Delete"); clearButton.title = localized("Clear History…")
@@ -151,8 +170,9 @@ final class ClipboardPanel: NSView, NSTableViewDataSource, NSTableViewDelegate, 
         return false
     }
 
-    @objc func close() { previewID = nil; preview.string = ""; onClose?() }
-    func render(_ rows: [ClipboardRow], retentionDays: Int = 7, error: String?) {
+    @objc func close() { previewID = nil; clearPreview(); onClose?() }
+    func render(_ rows: [ClipboardRow], retentionDays: Int = 7, error: String?, thumbnails: [String: Data] = [:]) {
+        self.thumbnails = thumbnails.compactMapValues { NSImage(data: $0) }
         rendering = true
         defer { rendering = false }
         retention.selectItem(withTag: retentionDays)
@@ -192,10 +212,13 @@ final class ClipboardPanel: NSView, NSTableViewDataSource, NSTableViewDelegate, 
         let cell = (tableView.makeView(withIdentifier: identifier, owner: self) as? SingleLineTableCell) ?? SingleLineTableCell()
         cell.identifier = identifier
         let item = rows[row]
-        cell.textField?.stringValue = (item.pinned ? "📌 " : "") + item.title
+        let title = item.sourcePath.map { URL(fileURLWithPath: $0).lastPathComponent }
+            ?? item.image.map { catalog.text("Image %1$@ × %2$@", arguments: [String($0.width), String($0.height)]) } ?? item.title
+        cell.toolTip = item.sourcePath ?? title
+        cell.configure(text: (item.pinned ? "📌 " : "") + title, image: item.image.flatMap { thumbnails[$0.digest] })
         return cell
     }
-    func controlTextDidChange(_ notification: Notification) { sequenceEnded = false; previewID = nil; preview.string = ""; updateButtons(); onEvent?("query", "", query) }
+    func controlTextDidChange(_ notification: Notification) { sequenceEnded = false; previewID = nil; clearPreview(); updateButtons(); onEvent?("query", "", query) }
     func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
         if commandSelector == #selector(NSResponder.insertNewline(_:)) { selectItem(); return true }
         if commandSelector == #selector(NSResponder.moveDown(_:)) { window?.makeFirstResponder(table); return true }
@@ -206,18 +229,29 @@ final class ClipboardPanel: NSView, NSTableViewDataSource, NSTableViewDelegate, 
         updateButtons()
     }
     private func updatePreview() {
-        guard let item = selected else { previewID = nil; preview.string = ""; return }
+        guard let item = selected else { previewID = nil; clearPreview(); return }
         guard previewID != item.id else { return }
-        previewID = item.id; preview.string = ""
+        previewID = item.id; clearPreview()
         onEvent?("preview", item.id, query)
     }
-    func renderPreview(_ text: String, id: String, query: String) {
+    func renderPreview(_ text: String, imageData: Data? = nil, id: String, query: String) {
         guard previewID == id, selected?.id == id, self.query == query else { return }
+        imagePreview.image = imageData.flatMap { NSImage(data: $0) }
+        imagePreview.isHidden = imagePreview.image == nil
+        previewScroll.isHidden = !imagePreview.isHidden
         preview.string = text
         preview.scrollToBeginningOfDocument(nil)
     }
+    private func clearPreview() {
+        preview.string = ""; imagePreview.image = nil
+        imagePreview.isHidden = true; previewScroll.isHidden = false
+    }
     private var selected: ClipboardRow? { rows.indices.contains(table.selectedRow) ? rows[table.selectedRow] : nil }
     private func updateButtons() {
+        let image = selected?.image != nil
+        pasteButton.title = localized(image ? "Copy Image" : "Paste")
+        nextButton.title = localized(image ? "Copy Next" : "Paste Next")
+        nextButton.toolTip = localized(image ? "Copy the selected image, then select the next item." : "Paste the selected item, then select the next item. Stops at the end of the list.")
         pasteButton.isEnabled = selected != nil && !pastePending
         nextButton.isEnabled = selected != nil && !pastePending && !sequenceEnded
         pinButton.isEnabled = selected != nil && !pastePending; deleteButton.isEnabled = selected != nil && !pastePending
@@ -236,12 +270,13 @@ final class ClipboardPanel: NSView, NSTableViewDataSource, NSTableViewDelegate, 
         pastePending = true; updateButtons()
         onEvent?(advance ? "select-next" : "select", selected.id, query)
     }
-    func finishPaste(id: String, query: String, advance: Bool, succeeded: Bool) {
+    func finishPaste(id: String, query: String, advance: Bool, succeeded: Bool, copiedImage: Bool = false) {
         pastePending = false
         defer { updateButtons() }
         guard succeeded else {
             status.stringValue = localized("Paste cancelled. Select an editor position and try again."); return
         }
+        if copiedImage { status.stringValue = localized("Image copied. Paste it into another app.") }
         guard advance, self.query == query, selected?.id == id else { return }
         let next = table.selectedRow + 1
         if rows.indices.contains(next) {

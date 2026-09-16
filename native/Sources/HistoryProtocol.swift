@@ -1,28 +1,34 @@
 import Foundation
-public struct ClipboardRow: Equatable, Sendable {
+struct ClipboardRow: Equatable, Sendable {
     public let id: String
     public let title: String
     public let pinned: Bool
+    let image: ClipboardImageReference?
+    var sourcePath: String?
 }
 
-/// Version 2 value protocol shared with separately built service plugins.
+/// Version 3 value protocol shared with separately built service plugins.
 /// Integers are little-endian UInt32; strings/blobs have a UInt32 byte length.
-public enum ExtensionListProtocol {
+enum ExtensionListProtocol {
     public static let maximumStateBytes = 512 * 1_024
     public static let maximumPayloadBytes = 256 * 1_024
     public static let maximumQueryBytes = 16 * 1_024
     public struct Response: Equatable, Sendable {
         public let state: Data
-        public let rows: [ClipboardRow]
+        public var rows: [ClipboardRow]
         public let selectedText: String
         public let retentionDays: Int
+        let selectedImage: ClipboardImageReference?
+        let liveImages: [ClipboardImageReference]
+        var thumbnails: [String: Data] = [:]
+        var imageData: Data?
     }
     public static func request(state: Data, event: String, payload: String = "", query: String = "", now: Date = Date()) throws -> Data {
         guard state.count <= maximumStateBytes, payload.utf8.count <= maximumPayloadBytes,
               query.utf8.count <= maximumQueryBytes, event.utf8.count <= 32 else {
             throw HistoryError.limitExceeded("list service field")
         }
-        var data = Data(); append(2, to: &data)
+        var data = Data(); append(3, to: &data)
         for value in [state, Data(event.utf8), Data(payload.utf8), Data(query.utf8)] {
             append(UInt32(clamping: value.count), to: &data); data.append(value)
         }
@@ -35,7 +41,7 @@ public enum ExtensionListProtocol {
     public static func response(_ data: Data) throws -> Response {
         var reader = Reader(data: data)
         let version = try reader.integer()
-        guard version == 1 || version == 2 else { throw HistoryError.unsupportedAPI }
+        guard version == 1 || version == 2 || version == 3 else { throw HistoryError.unsupportedAPI }
         let state = try reader.blob()
         guard state.count <= maximumStateBytes else { throw HistoryError.limitExceeded("list service state") }
         let count = try reader.integer()
@@ -44,13 +50,23 @@ public enum ExtensionListProtocol {
         for _ in 0..<count {
             let id = try reader.string(), title = try reader.string(), pinned = try reader.integer()
             guard !id.isEmpty, ids.insert(id).inserted, pinned <= 1 else { throw HistoryError.invalidResult("list row") }
-            rows.append(ClipboardRow(id: id, title: title, pinned: pinned == 1))
+            let descriptor = version == 3 ? try reader.string() : ""
+            rows.append(ClipboardRow(id: id, title: title, pinned: pinned == 1,
+                image: descriptor.isEmpty ? nil : try ClipboardImageReference(descriptor)))
         }
         let text = try reader.string()
-        let retentionDays = version == 2 ? Int(try reader.integer()) : 7
+        let retentionDays = version >= 2 ? Int(try reader.integer()) : 7
         guard [1, 3, 7].contains(retentionDays) else { throw HistoryError.invalidResult("retention period") }
+        let descriptor = version == 3 ? try reader.string() : ""
+        let selectedImage = descriptor.isEmpty ? nil : try ClipboardImageReference(descriptor)
+        var images: [ClipboardImageReference] = []
+        if version == 3 {
+            let count = try reader.integer()
+            guard count <= 200 else { throw HistoryError.limitExceeded("image count") }
+            for _ in 0..<count { images.append(try ClipboardImageReference(reader.string())) }
+        }
         guard reader.offset == data.count else { throw HistoryError.invalidResult("trailing service data") }
-        return Response(state: state, rows: rows, selectedText: text, retentionDays: retentionDays)
+        return Response(state: state, rows: rows, selectedText: text, retentionDays: retentionDays, selectedImage: selectedImage, liveImages: images)
     }
     private static func append(_ value: UInt32, to data: inout Data) {
         var value = value.littleEndian

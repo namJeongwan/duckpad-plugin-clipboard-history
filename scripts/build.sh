@@ -19,7 +19,7 @@ for ARCH in "${ARCHES[@]}"; do
   ARCH_ROOT="target/native/$ARCH"
   mkdir -p "$ARCH_ROOT"
   rustc +1.91.1 --target "$RUST_TARGET" --edition 2021 --crate-type staticlib -C opt-level=2 -C panic=abort src/lib.rs -o "$ARCH_ROOT/libclipboard.a"
-  swiftc -target "$ARCH-apple-macosx13.0" -swift-version 6 -O -emit-library -module-name DuckpadClipboardNative_0_2_1 \
+  swiftc -target "$ARCH-apple-macosx13.0" -swift-version 6 -O -emit-library -module-name DuckpadClipboardNative_0_3_2 \
     -I "$SDK_ROOT/include" -I native/include "$SDK_ROOT/Swift/DuckpadHost.swift" native/Sources/*.swift \
     "$ARCH_ROOT/libclipboard.a" -framework AppKit -framework Security -framework SystemConfiguration -lresolv \
     -o "$ARCH_ROOT/module.dylib"

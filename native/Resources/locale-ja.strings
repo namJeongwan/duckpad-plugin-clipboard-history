@@ -22,3 +22,9 @@
 "End of history. Select an item to start again." = "履歴の最後です。項目を選択すると再開できます。";
 "Clipboard item preview" = "クリップボード項目のプレビュー";
 "Preview" = "プレビュー";
+"Copy Image" = "画像をコピー";
+"Copy Next" = "コピーして次へ";
+"Image %1$@ × %2$@" = "画像 %1$@ × %2$@";
+"Image copied. Paste it into another app." = "画像をコピーしました。他のアプリにペーストできます。";
+"Clipboard image preview" = "クリップボード画像のプレビュー";
+"Copy the selected image, then select the next item." = "選択した画像をコピーして、次の項目を選択します。";
