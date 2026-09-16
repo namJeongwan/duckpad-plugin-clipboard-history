@@ -1,0 +1,12 @@
+[package]
+name = "duckpad-plugin-clipboard-history"
+version = "0.2.1"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[profile.release]
+opt-level = "z"
+panic = "abort"

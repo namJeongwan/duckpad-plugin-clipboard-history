@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "id": "com.duckpad.clipboard-history",
+  "name": "Clipboard History",
+  "version": {
+    "major": 0,
+    "minor": 2,
+    "patch": 1
+  },
+  "api": {
+    "minimum": {
+      "major": 1,
+      "minor": 3,
+      "patch": 0
+    },
+    "maximumExclusive": {
+      "major": 2,
+      "minor": 0,
+      "patch": 0
+    }
+  },
+  "publisher": {
+    "id": "com.duckpad",
+    "keyID": "clipboard-release-1"
+  },
+  "runtime": {
+    "kind": "native",
+    "module": "module.dylib",
+    "abi": "duckpad-native-1"
+  },
+  "capabilities": [
+    {
+      "id": "clipboard.read",
+      "scope": "application"
+    },
+    {
+      "id": "clipboard.write",
+      "scope": "application"
+    },
+    {
+      "id": "storage.plugin",
+      "scope": "application"
+    },
+    {
+      "id": "ui.list",
+      "scope": "application"
+    },
+    {
+      "id": "runtime.native",
+      "scope": "application"
+    }
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "id": "com.duckpad.clipboard-history.show",
+        "title": "Clipboard History",
+        "operation": 1,
+        "inputScope": "service"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "com.duckpad.clipboard-history.show",
+        "key": "cmd+option+v"
+      }
+    ],
+    "snippets": [],
+    "themes": [],
+    "languages": []
+  }
+}

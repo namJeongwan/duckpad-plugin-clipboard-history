@@ -1,0 +1,1 @@
+module ClipboardCore { header "ClipboardCore.h" export * }
