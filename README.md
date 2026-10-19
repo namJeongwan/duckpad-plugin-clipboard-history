@@ -10,6 +10,8 @@ Install the pinned Rust toolchain and Apple's Swift/macOS SDK, then provide the 
 
 ```sh
 cargo test
+python3 scripts/verify-localizations.py
+bash scripts/test-localized-image-search.sh
 rustup target add --toolchain 1.91.1 aarch64-apple-darwin x86_64-apple-darwin
 bash scripts/build.sh /path/to/duckpad/SDK/DuckpadNative
 bash scripts/test-native.sh /path/to/duckpad/SDK/DuckpadNative
@@ -33,6 +35,13 @@ Install the signed directory using **Plugins Admin → Install Plugin…**, it i
 - `legacy/wasm-plugin.json`, `scripts/build-wasm.sh`: retained 0.1.2 WASM compatibility build.
 
 The native plugin keeps the same publisher/command storage identity and reads earlier state formats, preserving unexpired history and pins from 0.1.x. Preexisting clipboard contents are not imported on activation. Retention is 1, 3, or 7 days; pinned entries expire too. History persists across restart. Sequential paste stops at the final visible result. Delayed insertion uses a host token bound to the editor state at the user's request.
+
+Image search accepts the current interface's image label (for example, `이미지`,
+`画像`, or `Bild`) and the existing English `image` alias. Text and source-path
+matching remain available, and changing language reruns the current query. The
+build validates all eight locale tables and format arguments before compilation.
+The focused image-search test uses temporary history without the real clipboard;
+the native smoke also exercises localized queries through the actual plugin UI.
 
 Host SDK documentation: `duckpad/docs/plugins/native-sdk.md` and `duckpad/SDK/DuckpadNative/include/DuckpadNative.h`. The native API is currently a development SDK, not a published stable API or a full Notepad++ API equivalent. The flat signed package format remains. Duckpad detects published catalog releases and installs them when Update is clicked. Native updates apply on the next app launch without interrupting the current plugin; history remains separate. No separate Duckpad permission review is required; macOS may ask when protected system resources are accessed. Uninstall UI is not implemented yet.
 

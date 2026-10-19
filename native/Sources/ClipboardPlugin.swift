@@ -40,6 +40,7 @@ import AppKit
     func setLanguage(_ language: String) {
         L10n.catalog = .init(language: language, directory: resourceDirectory)
         panel.refreshLocalization()
+        send("query", payload: "", query: panel.query)
     }
     func stop() {
         active = false; monitor?.cancel(); monitor = nil; task?.cancel(); task = nil; queue.removeAll()
@@ -90,7 +91,7 @@ import AppKit
                 let event = self.queue.removeFirst()
                 do {
                     let paste = event.kind == "select" || event.kind == "select-next"
-                    let result = try await self.engine.process(event: paste ? "select" : event.kind, payload: event.payload, query: event.query, image: event.image, imageFile: event.imageFile)
+                    let result = try await self.engine.process(event: paste ? "select" : event.kind, payload: event.payload, query: event.query, image: event.image, imageFile: event.imageFile, imageKindLabel: L10n.catalog.text("Image"))
                     guard self.active, !Task.isCancelled else { return }
                     if event.kind == "preview" {
                         self.panel.renderPreview(result.selectedText, imageData: result.imageData, id: event.payload, query: event.query)

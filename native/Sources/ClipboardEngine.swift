@@ -6,7 +6,7 @@ actor ClipboardEngine {
     private let directory: URL
     private var state: Data?
     init(directory: URL) { self.directory = directory }
-    func process(event: String, payload: String, query: String, image: Data? = nil, imageFile: URL? = nil) throws -> ExtensionListProtocol.Response {
+    func process(event: String, payload: String, query: String, image: Data? = nil, imageFile: URL? = nil, imageKindLabel: String = "Image") throws -> ExtensionListProtocol.Response {
         try Task.checkCancellation()
         if state == nil {
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
@@ -36,7 +36,11 @@ actor ClipboardEngine {
             if let image = result.rows[index].image { result.rows[index].sourcePath = images.sourcePath(image) }
         }
         if !query.isEmpty {
-            result.rows = result.rows.filter { matchingTextIDs.contains($0.id) || $0.sourcePath?.localizedCaseInsensitiveContains(query) == true }
+            result.rows = result.rows.filter {
+                matchingTextIDs.contains($0.id)
+                    || $0.sourcePath?.localizedCaseInsensitiveContains(query) == true
+                    || ($0.image != nil && imageKindLabel.localizedCaseInsensitiveContains(query))
+            }
         }
         try Task.checkCancellation()
         if result.state != state {
