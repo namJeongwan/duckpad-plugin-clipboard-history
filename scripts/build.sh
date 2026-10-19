@@ -1,6 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
+python3 scripts/verify-localizations.py
 SDK_ROOT="${1:?Usage: bash scripts/build.sh /path/to/duckpad/SDK/DuckpadNative}"
 SDK_ROOT="$(cd "$SDK_ROOT" && pwd)"
 OUTPUT="dist/native/com.duckpad.clipboard-history.duckpad-plugin"

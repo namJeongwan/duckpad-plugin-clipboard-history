@@ -119,6 +119,20 @@ import DuckpadNativeABI
         search.delegate?.controlTextDidChange?(Notification(name: NSControl.textDidChangeNotification, object: search))
         let imagePreview = all.compactMap { $0 as? NSImageView }.first { $0.accessibilityIdentifier() == "duckpad.plugin.list.image-preview" }!
         try await wait("image preview") { table.numberOfRows == 1 && imagePreview.image != nil && !imagePreview.isHidden }
+        for (code, keyword) in [("en", "Image"), ("ko", "이미지"), ("ja", "画像"), ("zh-Hans", "图像"),
+                                ("de", "Bild"), ("fr", "Image"), ("it", "Immagine"), ("pt-BR", "Imagem")] {
+            code.withCString { language(instance, $0) }
+            search.stringValue = "no-image-match-xyz"
+            search.delegate?.controlTextDidChange?(Notification(name: NSControl.textDidChangeNotification, object: search))
+            try await wait("empty before localized image query") { table.numberOfRows == 0 }
+            search.stringValue = keyword
+            search.delegate?.controlTextDidChange?(Notification(name: NSControl.textDidChangeNotification, object: search))
+            try await wait("localized image query \(code)") { table.numberOfRows == 1 && imagePreview.image != nil }
+        }
+        "ko".withCString { language(instance, $0) }
+        search.stringValue = "image"
+        search.delegate?.controlTextDidChange?(Notification(name: NSControl.textDidChangeNotification, object: search))
+        try await wait("English image alias after language change") { table.numberOfRows == 1 && imagePreview.image != nil }
         window.contentView?.layoutSubtreeIfNeeded()
         try await Task.sleep(for: .milliseconds(80))
         precondition(window.frame.size == windowSizeBeforeImage, "Image preview must not enlarge the window")
